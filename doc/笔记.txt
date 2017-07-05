@@ -1,0 +1,6 @@
+
+1. 教你如何使用github，可以参考下：
+http://www.cnblogs.com/fnng/archive/2012/01/07/2315685.html
+
+2. github和本地都存在的项目，建立关联后，从github到本地fetch&merge数据是可以用以下命令：
+   $ git pull origin master --allow-unrelated-histories

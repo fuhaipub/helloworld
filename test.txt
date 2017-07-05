@@ -1,5 +1,1 @@
 Test version1 Add
-教你如何使用github，可以参考下：
-http://www.cnblogs.com/fnng/archive/2012/01/07/2315685.html
-$ git pull origin master --allow-unrelated-histories
-先合并再push，亲测可行
