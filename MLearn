@@ -1,0 +1,132 @@
+# -*- coding: utf-8 -*-
+
+'''
+This module is for classifying the Chinese text.
+中文语料资源来
+准备：
+1、中文语料库，下载地址：https://github.com/HappyShadowWalker/ChineseTextClassify
+
+处理步骤：
+Step1. 预处理，去噪声，抽取文本。此步可省略。
+Step2. 中文分析，使用Python Jieba库“结巴”库，pyip上可以直接安装pip install jieba。算法RCF，基于概率的随机场算法
+Step3. 构建词的向量空间。生成词袋，计算词的频率，IF-IDF = TF * IDF。
+Step4.
+Step5.
+
+'''
+import sys
+import os
+import jieba
+import numpy as np
+from  sklearn.datasets.base import Bunch
+import cPickle as pickle
+
+#save a string to file
+def savefile(savepath, content):
+    fp = open(savepath,"wb")
+    fp.write(content)
+    fp.close()
+
+#read file at path, return string
+def readfile(path):
+    fp = open(path,"rb")
+    content = fp.read()
+    fp.close()
+    return content
+
+def cutTextfiles(corpus_path , seg_path ):
+    #corpus_path = "SogouC\ClassFile"
+    #seg_path = "SogouC_seg\ClassFiel_seg"
+    sub_path = os.listdir(corpus_path)
+
+    for classdir in sub_path:
+        file_list = os.listdir(corpus_path+"\\"+classdir)
+        for textfile in file_list:
+            fullname_file_org= corpus_path+"\\"+classdir+"\\"+textfile
+            fullname_file_seg= seg_path+"\\"+classdir+"\\"+textfile
+            content_origin = readfile(fullname_file_org).strip().replace("\r\n", "").strip()
+            seg_content = jieba.cut(content_origin, cut_all=False)
+
+            if not os.path.exists(seg_path+"\\"+classdir):
+                os.makedirs(seg_path+"\\"+classdir)
+            if os.path.exists(fullname_file_seg):
+                os.remove(fullname_file_seg)
+            savefile(fullname_file_seg, " ".join(seg_content).encode('UTF-8'))
+
+
+
+# # =================Step3 构建词向量空间Step1 预处理
+Corpus_Origin = "SogouC\ClassFile"
+Corpus_Segment = "SogouC_seg\ClassFiel_seg"
+print "Step1：预处理完成."
+
+# # =================Step3 构建词向量空间Step2 中文分词
+cutTextfiles(Corpus_Origin, seg_path = Corpus_Segment)
+print "Step2：分词完成."
+
+
+# #=================Step3 构建词向量空间
+def readbunchobj(path):
+    fp = open(path, "rb")
+    bunch = pickle.load(fp)
+    fp.close()
+    return bunch
+
+def  writebunchobj(path,bunch):
+    fp = open(path, "wb")
+    pickle.dump(bunch,fp)
+    fp.close()
+
+
+bunch = Bunch(target_name=[], label=[], filenames=[], contents=[])
+
+wordbag_path = "train_wordbag\\train_set.dat"
+
+catelist = os.listdir(Corpus_Segment)
+bunch.target_name.extend(catelist)  #将类别信息保存在Buch对象中
+
+for mydir in catelist:
+    class_path = Corpus_Segment +"\\"+mydir
+    file_list = os.listdir(class_path)
+    for filepath in file_list:
+        fullname= class_path + "\\" + filepath
+        bunch.label.append(mydir)
+        bunch.filenames.append(fullname)
+        bunch.contents.append(readfile(fullname).strip())
+#bunch持久化
+if not os.path.exists(wordbag_path):
+    os.makedirs(wordbag_path)
+
+writebunchobj(wordbag_path, bunch)
+
+print "Step3.1 : 构建Bunch文本对象文件完成."
+
+# 计算TF-IDF
+# IFIDF = TFI * IDF
+# TF是词在文件内部的频率分布， IDF是“逆向文件频率”，指的是词在所有文档中的所占的多少,IDF= log( 文件总数 / 词出现的文件数）
+from sklearn import feature_extraction
+from sklearn.feature_extraction.text  import TfidfTransformer  #TF-IDF向量转换类
+from sklearn.feature_extraction.text  import TfidfVectorizer   #TF-IDF向量生成类
+
+bunch = readbunchobj(wordbag_path)
+tfidfspace = Bunch(target_name=bunch.target_name, label=bunch.label, filenames=bunch.filenames, tdm=[], vocabulary=[])
+
+#初始化向量空间对象
+stpwrdlst = []
+vectorizer = TfidfVectorizer(stop_words=stpwrdlst, sublinear_tf=True, max_df =0.5)
+transformer= TfidfTransformer() #该类会统计每个词语的TF-IDF权值
+
+#文本转为词频矩阵，单独保存字典文件
+tfidfspace.tdm = vectorizer.fit_transform(bunch.contents)
+tfidfspace.vocabulary = vectorizer.vocabulary_
+
+#创建词袋的持久化
+space_path = "train_wordbag\\tfdifspace.dat"
+writebunchobj(space_path, tfidfspace)
+
+
+print "Step3.2: 构建Bunch文本对象文件完成."
+# #=================Step3
+
+
+
