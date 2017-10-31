@@ -1,0 +1,5 @@
+在c:\用户\pip\pip.ini
+内容：
+[global]
+trusted-host=pypi.mirrors.ustc.edu.cn
+index-url=https://pypi.mirrors.ustc.edu.cn/simple
